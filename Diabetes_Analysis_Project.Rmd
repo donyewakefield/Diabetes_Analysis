@@ -1,0 +1,122 @@
+---
+title: "Diabetes Analysis Project"
+author: "Donye Wakefield"
+date: "4/21/2021"
+output: html_document
+---
+```{r}
+###**************************************Import*****************************************##
+library(tidyverse)
+library(ggplot2)
+library(lm.beta)
+library(olsrr)
+diabetes_data_set <- read_csv("official_diabetes data.csv")
+```
+
+```{r}
+###**************************************Tidy*******************************************#####Tidy up the data 
+unclean_diabetes <- tibble(diabetes_data_set)
+#remove NAs from variables
+diabetes <- unclean_diabetes %>% #looks at general data
+  select(BloodPressure, Age, BMI, SkinThickness, Glucose, DiabetesPedigreeFunction, Outcome) %>%
+  na.omit()
+```
+
+```{r}
+###Descriptive statistics 
+summary(diabetes)
+nrow(diabetes)
+nrow(unclean_diabetes) #apparently no NAs are present 
+ncol(diabetes)
+#Standard deviations of variables
+sd(diabetes$BloodPressure) 
+sd(diabetes$Age)
+sd(diabetes$BMI) 
+sd(diabetes$SkinThickness)
+sd(diabetes$DiabetesPedigreeFunction)
+sd(diabetes$Glucose) #Very high
+```
+
+```{r}
+###**************************Exploratory Analysis************************************###
+###What does the distributions look like? Are there outliers?
+#Visualize Blood Pressure
+  ggplot(data = diabetes)+
+  geom_histogram(mapping = aes(x = BloodPressure), color = "red") 
+  ggplot(data = diabetes)+
+  geom_boxplot(mapping = aes(x = BloodPressure), color = "purple") #outlier
+#Visualize BMI
+  ggplot(data = diabetes)+
+  geom_histogram(mapping = aes(x = BMI), color = "red") 
+  ggplot(data = diabetes)+
+  geom_boxplot(mapping = aes(x = BMI), color = "purple") #outliers
+#Visualize Age
+  ggplot(data = diabetes)+
+    geom_histogram(mapping = aes(x = Age), color = "red")
+  ggplot(data = diabetes)+
+    geom_boxplot(mapping = aes(x = Age), color = "purple") #outliers
+#Visualize Skin Thickness
+  ggplot(data = diabetes)+
+    geom_histogram(mapping = aes(x = SkinThickness), color = "red")
+  ggplot(data = diabetes)+
+    geom_boxplot(mapping = aes(x = SkinThickness), color = "purple") #outliers
+#Visualize Glucose
+  ggplot(data = diabetes)+
+    geom_histogram(mapping = aes(x = Glucose), color = "red")
+  ggplot(data = diabetes)+
+    geom_boxplot(mapping = aes(x = Glucose), color = "purple") #outliers
+#Visualize Diabetes pedigree function
+  ggplot(data = diabetes)+
+    geom_histogram(mapping = aes(x = DiabetesPedigreeFunction), color = "red")
+  ggplot(data = diabetes)+
+    geom_boxplot(mapping = aes(x = DiabetesPedigreeFunction), color = "purple") #outliers
+ggplot(data = diabetes)+
+  geom_bar(mapping = aes(x = Outcome), color = "red")
+shapiro.test(diabetes$BloodPressure)
+shapiro.test(diabetes$BMI)
+shapiro.test(diabetes$Glucose)
+```
+
+```{r}
+###************************************Advanced Analysis******************************###
+###What is the strongest predictor?
+##Evaluate correlations
+cor(diabetes) #Glucose has best correlation
+##visualize the relationship
+  ggplot(data = diabetes) +
+  geom_point(mapping = aes(x = Glucose, y = Outcome), color = "blue", position = "jitter")
+  ggplot(data = diabetes) +
+  geom_point(mapping = aes(x = Age, y = Outcome), color = "red", position = "jitter")
+  ggplot(data = diabetes) +
+  geom_point(mapping = aes(x = BMI, y = Outcome), color = "purple", position = "jitter")
+```
+
+```{r}
+##Which is the best model?
+##Model the relationships for top 3 best correlations
+diabetes
+Outcome_Model1 <- lm(Outcome ~ Glucose, data = diabetes)
+summary(Outcome_Model1) #significant 
+Outcome_Model2 <- lm(Outcome ~ Glucose + Age, data = diabetes)
+summary(Outcome_Model2) #significant
+Outcome_Model3 <- lm(Outcome ~ Glucose + Age + BMI, data = diabetes)
+summary(Outcome_Model3) #significant #adjusted R^2 #Lowest residual SE
+Outcome_Model4 <- lm(Outcome ~ Glucose + BMI, data = diabetes)
+summary(Outcome_Model4) #significant
+##Further evaluate the models- standardization #Glucose is confirmed again as always being the best predictor in each of the models
+lm.beta(Outcome_Model1)
+lm.beta(Outcome_Model2)
+lm.beta(Outcome_Model3)
+lm.beta(Outcome_Model4)
+##Further evaluate the models- looking at information criterions
+AIC(Outcome_Model1, k = 1)
+AIC(Outcome_Model2, k = 2)
+AIC(Outcome_Model3, k = 3)
+AIC(Outcome_Model4, k = 2)
+BIC(Outcome_Model1)
+BIC(Outcome_Model2)
+BIC(Outcome_Model3)
+BIC(Outcome_Model4)
+## 3 predictor model seems to be the best
+```
+
